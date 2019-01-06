@@ -38,6 +38,9 @@ namespace gsl {
     static_assert(std::is_assignable<T&, std::nullptr_t>::value, "T is not a pointer like type");
     static_assert(!std::is_same<T, std::nullptr_t>::value, "T is nullptr_t");
 
+    using element_type = std::remove_reference_t<decltype(*std::declval<T>())>;
+    using pointer = std::add_pointer_t<element_type>;
+
     template <typename U, typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     constexpr explicit not_null(U&& u)
     : m_ptr(std::forward<U>(u))
@@ -58,17 +61,20 @@ namespace gsl {
     not_null(not_null&& other) = default;
     not_null& operator=(not_null&& other) = default;
 
-    constexpr T get() const {
-        Ensures(m_ptr != nullptr);
-        return m_ptr;
+    constexpr pointer get() const {
+      Ensures(m_ptr != nullptr);
+      return std::addressof(*m_ptr);
     }
 
-    constexpr operator T() const { return get(); }
-    constexpr T operator->() const { return get(); }
+    constexpr operator pointer() const { return get(); }
+    constexpr pointer operator->() const { return get(); }
     constexpr decltype(auto) operator*() const { return *get(); }
 
     not_null(std::nullptr_t) = delete;
     not_null& operator=(std::nullptr_t) = delete;
+
+    not_null(int) = delete;
+    not_null& operator=(int) = delete;
 
     not_null& operator++() = delete;
     not_null& operator--() = delete;
