@@ -110,16 +110,20 @@ namespace gsl {
   class final_action {
   public:
     explicit
-    final_action(Func func) noexcept
+    final_action(Func func) noexcept(std::is_nothrow_move_constructible<Func>::value)
     : m_func(std::move(func))
     , m_invoke(true)
     {
 
     }
 
-    ~final_action() {
+    ~final_action() noexcept {
       if (m_invoke) {
-        m_func();
+        try {
+          m_func();
+        } catch (...) {
+          // ignore the exception
+        }
       }
     }
 
@@ -133,7 +137,11 @@ namespace gsl {
 
     }
 
-    final_action& operator=(final_action&& other) = delete;
+    final_action& operator=(final_action&& other) {
+      m_func = std::move(other.m_func);
+      m_invoke = std::exchange(other.m_invoke, false);
+      return *this;
+    };
 
   private:
     Func m_func;
@@ -142,13 +150,13 @@ namespace gsl {
 
   template<typename Func>
   inline
-  final_action<Func> finally(const Func& f) noexcept {
+  final_action<Func> finally(const Func& f) noexcept(std::is_nothrow_move_constructible<Func>::value) {
     return final_action<Func>(f);
   }
 
   template<typename Func>
   inline
-  final_action<Func> finally(Func&& f) noexcept {
+  final_action<Func> finally(Func&& f) noexcept(std::is_nothrow_move_constructible<Func>::value) {
     return final_action<Func>(std::forward<Func>(f));
   }
 

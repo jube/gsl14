@@ -50,6 +50,27 @@ TEST(FinallyTest, Function) {
   EXPECT_EQ(g_variable, 1);
 }
 
+TEST(FinallyTest, ThrowingLambda) {
+  int x = 0;
+
+  {
+    auto defer = gsl::finally([&]() { x = 1; throw std::runtime_error(""); });
+    EXPECT_EQ(x, 0);
+  }
+
+  EXPECT_EQ(x, 1);
+}
+
+TEST(FinallyTest, Discarded) {
+  int x = 0;
+
+  {
+    gsl::finally([&]() { x = 1; });
+    EXPECT_EQ(x, 1);
+  }
+
+  EXPECT_EQ(x, 1);
+}
 
 /*
  * narrow
